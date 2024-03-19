@@ -4,7 +4,7 @@ This repository implements a simple GitHub composite action for uploading record
 
 ## Usage
 
-After installing the SF CLI and authorising the relevant org in your GitHub workflow, data can be imported using this action as follows:
+After installing the SF CLI and authorizing the relevant org in your GitHub workflow, data can be imported using this action as follows:
 
 ```
 jobs:
@@ -44,7 +44,7 @@ jobs:
 
 The following actions were also used in the example workflow to create the prerequisites for the data import:
 
-- [Get Node Version](https://github.com/svierk/get-node-version) | Pulls the Node.js version to be used from the _package.json_ of the project
+- [Get Node Version](https://github.com/svierk/get-node-version) | Pulls Node.js version to be used from the _package.json_ of the project
 - [SFDX CLI Setup](https://github.com/svierk/sfdx-cli-setup) | Installs the Salesforce CLI and related plugins
 - [SFDX Login]() | Handles Salesforce login using a Salesforce DX authorization URL
 
@@ -52,7 +52,7 @@ Of course, the data import action can be used flexibly and the respective approa
 
 ## References
 
-The two authorisation options supported by this GitHub composite action can be found in the Salesforce CLI Command Reference here: 
+The two authorization options supported by this GitHub composite action can be found in the Salesforce CLI Command Reference here: 
 
 - [data import tree](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_data_commands_unified.htm#cli_reference_data_import_tree_unified) (JSON format)
 - [data upsert bulk](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_data_commands_unified.htm#cli_reference_data_upsert_bulk_unified) (CSV format)
