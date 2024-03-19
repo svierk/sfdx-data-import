@@ -1,5 +1,5 @@
 name: 'SFDX Data Import'
-description: 'Salesforce import action for uploading data based on CSV (Bulk API 2.0) or JSON (sObject Tree) format.'
+description: 'Salesforce import action for uploading records based on CSV (Bulk API 2.0) or JSON (sObject Tree) format.'
 
 branding:
   icon: 'upload-cloud'
@@ -7,7 +7,7 @@ branding:
 
 inputs:
   file-path:
-    description: Path to CSV or JSON file that contains the data to be uploaded.
+    description: Path to CSV or JSON file that contains the records to be uploaded.
     required: true
   object-type:
     description: >
