@@ -28,6 +28,7 @@ jobs:
         uses: svierk/sfdx-login@main
         with:
           sfdx-url: ${{ secrets.SFDX_AUTH_URL }}
+          alias: awesome-org
 
       - name: CSV Data Import
         uses: svierk/sfdx-data-import@main
@@ -35,18 +36,20 @@ jobs:
           file-path: './data/accounts.csv'
           object-type: 'Account'
           external-id: 'Id'
+          target-org: awesome-org
 
       - name: JSON Data Import
         uses: svierk/sfdx-data-import@main
         with:
-          file-path: './data/accounts.json'
+          file-path: './data/accounts.json,./data/contacts.json'
+          api-version: '59.0'
 ```
 
 The following actions were also used in the example workflow to create the prerequisites for the data import:
 
 - [Get Node Version](https://github.com/svierk/get-node-version) | Pulls Node.js version to be used from the _package.json_ of the project
 - [SFDX CLI Setup](https://github.com/svierk/sfdx-cli-setup) | Installs the Salesforce CLI and related plugins
-- [SFDX Login]() | Handles Salesforce login using a Salesforce DX authorization URL
+- [SFDX Login](https://github.com/svierk/sfdx-login) | Handles Salesforce login using a Salesforce DX authorization URL
 
 Of course, the data import action can be used flexibly and the respective approach can vary.
 
