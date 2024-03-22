@@ -1,9 +1,9 @@
-name: 'SFDX Data Import'
-description: 'Salesforce import action for uploading records based on CSV (Bulk API 2.0) or JSON (sObject Tree) format.'
+name: SFDX Data Import
+description: Salesforce import action for uploading records based on CSV (Bulk API 2.0) or JSON (sObject Tree) format.
 
 branding:
-  icon: 'upload-cloud'
-  color: 'blue'
+  icon: upload-cloud
+  color: blue
 
 inputs:
   file-path:
