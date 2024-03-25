@@ -55,7 +55,7 @@ Of course, the data import action can be used flexibly and the respective approa
 
 ## References
 
-The two authorization options supported by this GitHub composite action can be found in the Salesforce CLI Command Reference here: 
+The data import options supported by this GitHub composite action can be found in the Salesforce CLI Command Reference here: 
 
 - [data import tree](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_data_commands_unified.htm#cli_reference_data_import_tree_unified) (JSON format)
 - [data upsert bulk](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_data_commands_unified.htm#cli_reference_data_upsert_bulk_unified) (CSV format)
