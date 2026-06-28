@@ -35,26 +35,47 @@ runs:
   steps:
     - name: Data Import
       shell: bash
+      env:
+        FILE_PATH: ${{ inputs.file-path }}
+        OBJECT_TYPE: ${{ inputs.object-type }}
+        EXTERNAL_ID: ${{ inputs.external-id }}
+        TARGET_ORG: ${{ inputs.target-org }}
+        API_VERSION: ${{ inputs.api-version }}
       run: |
-        filepath=${{ inputs.file-path }}
-        filename_with_ext=$(basename "$filepath")
+        set -euo pipefail
+
+        # Determine the file extension from the first file (CSV is single-file,
+        # JSON may be a comma-separated list that shares the same extension).
+        first_file="${FILE_PATH%%,*}"
+        filename_with_ext=$(basename "$first_file")
         extension="${filename_with_ext##*.}"
+        extension="${extension,,}"
+
         args=()
 
-        if [[ -n "${{ inputs.target-org }}" ]]; then
-          args+=(--target-org "${{ inputs.target-org }}")
+        if [[ -n "$TARGET_ORG" ]]; then
+          args+=(--target-org "$TARGET_ORG")
         fi
 
-        if [[ -n "${{ inputs.api-version }}" ]]; then
-          args+=(--api-version "${{ inputs.api-version }}")
+        if [[ -n "$API_VERSION" ]]; then
+          args+=(--api-version "$API_VERSION")
         fi
 
-        if [[ "$extension" == "csv" ]] && [[ -n "${{ inputs.object-type }}" ]] && [[ -n "${{ inputs.external-id }}" ]]; then
-          args+=(--sobject ${{ inputs.object-type }})
-          args+=(--external-id ${{ inputs.external-id }})
-          sf data upsert bulk --file ${{ inputs.file-path }} "${args[@]}"
-        fi
-
-        if [[ "$extension" == "json" ]]; then
-          sf data import tree --files ${{ inputs.file-path }} "${args[@]}"
-        fi
+        case "$extension" in
+          csv)
+            if [[ -z "$OBJECT_TYPE" ]]; then
+              echo "::error::CSV upload (Bulk API 2.0) requires the 'object-type' input."
+              exit 1
+            fi
+            args+=(--sobject "$OBJECT_TYPE")
+            args+=(--external-id "$EXTERNAL_ID")
+            sf data upsert bulk --file "$FILE_PATH" "${args[@]}"
+            ;;
+          json)
+            sf data import tree --files "$FILE_PATH" "${args[@]}"
+            ;;
+          *)
+            echo "::error::Unsupported file extension '.$extension'. Only .csv (Bulk API 2.0) and .json (sObject Tree) are supported."
+            exit 1
+            ;;
+        esac
