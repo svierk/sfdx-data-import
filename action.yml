@@ -29,6 +29,10 @@ inputs:
   api-version:
     description: Override the api version used for api requests made by this action, for example '59.0'.
     required: false
+  step-summary:
+    description: Write a result section to the GitHub Actions job summary. Set to false to avoid collisions with a custom workflow summary.
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -41,6 +45,7 @@ runs:
         EXTERNAL_ID: ${{ inputs.external-id }}
         TARGET_ORG: ${{ inputs.target-org }}
         API_VERSION: ${{ inputs.api-version }}
+        STEP_SUMMARY: ${{ inputs.step-summary }}
       run: |
         set -euo pipefail
 
@@ -70,12 +75,30 @@ runs:
             args+=(--sobject "$OBJECT_TYPE")
             args+=(--external-id "$EXTERNAL_ID")
             sf data upsert bulk --file "$FILE_PATH" "${args[@]}"
+            format="CSV (Bulk API 2.0)"
             ;;
           json)
             sf data import tree --files "$FILE_PATH" "${args[@]}"
+            format="JSON (sObject Tree)"
             ;;
           *)
             echo "::error::Unsupported file extension '.$extension'. Only .csv (Bulk API 2.0) and .json (sObject Tree) are supported."
             exit 1
             ;;
         esac
+
+        echo "✅ Successfully imported data from: $FILE_PATH"
+
+        if [[ "$STEP_SUMMARY" == "true" ]]; then
+          {
+            echo ""
+            echo "### 💾 Data imported"
+            echo ""
+            echo "- **File(s):** \`$FILE_PATH\`"
+            echo "- **Format:** $format"
+            if [[ "$extension" == "csv" ]]; then
+              echo "- **Object:** \`$OBJECT_TYPE\`"
+            fi
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi

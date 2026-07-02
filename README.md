@@ -69,6 +69,7 @@ Of course, the data import action can be used flexibly and the respective approa
 | `external-id` | no       | `Id`    | Name of the external ID field (or `Id`). Used for CSV (Bulk API 2.0) uploads.                        |
 | `target-org`  | no       |         | Username or alias of the target org. Not required if the default org is set.                         |
 | `api-version` | no       |         | Override the api version used for api requests, e.g. `59.0`.                                         |
+| `step-summary` | no      | `true`  | Write a result section to the GitHub Actions [job summary](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary). Set to `false` to avoid collisions with a custom workflow summary. |
 
 ## References
 
