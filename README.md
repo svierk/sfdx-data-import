@@ -6,7 +6,7 @@ This repository implements a simple GitHub composite action for uploading record
 
 After installing the SF CLI and authorizing the relevant org in your GitHub workflow, data can be imported using this action as follows:
 
-```
+```yaml
 jobs:
   validation:
     name: Validation
