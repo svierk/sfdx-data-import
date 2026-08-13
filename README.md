@@ -11,27 +11,31 @@ jobs:
   validation:
     name: Validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Select Node Version
-        uses: svierk/get-node-version@main
+        uses: svierk/get-node-version@v1.5.1
 
       - name: Install Dependencies
         run: npm ci
 
       - name: Install SF CLI
-        uses: svierk/sfdx-cli-setup@main
+        uses: svierk/sfdx-cli-setup@v1.1.2
 
       - name: Salesforce Org Login
-        uses: svierk/sfdx-login@main
+        uses: svierk/sfdx-login@v1.4.2
         with:
           sfdx-url: ${{ secrets.SFDX_AUTH_URL }}
           alias: awesome-org
 
       - name: CSV Data Import
-        uses: svierk/sfdx-data-import@main
+        uses: svierk/sfdx-data-import@v1.3.1
         with:
           file-path: './data/accounts.csv'
           object-type: 'Account'
@@ -39,7 +43,7 @@ jobs:
           target-org: awesome-org
 
       - name: JSON Data Import
-        uses: svierk/sfdx-data-import@main
+        uses: svierk/sfdx-data-import@v1.3.1
         with:
           file-path: './data/accounts.json,./data/contacts.json'
           api-version: '59.0'
@@ -70,6 +74,24 @@ Of course, the data import action can be used flexibly and the respective approa
 | `target-org`  | no       |         | Username or alias of the target org. Not required if the default org is set.                         |
 | `api-version` | no       |         | Override the api version used for api requests, e.g. `59.0`.                                         |
 | `step-summary` | no      | `true`  | Write a result section to the GitHub Actions [job summary](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary). Set to `false` to avoid collisions with a custom workflow summary. |
+
+## Security & versioning
+
+Every `uses:` reference in the snippet above is **pinned to an exact release tag**, e.g. `svierk/sfdx-data-import@v1.3.1`. Do the same in your own pipelines:
+
+- **Never reference a mutable ref** such as `@main` or `@v1`. It runs whatever code sits on that branch/tag at run time - with access to your org credentials - so a compromised or rewritten ref would run unnoticed.
+- **Good - pin to an exact release tag** (`@v1.3.1`). Readable, concrete, and bumped through reviewed pull requests.
+- **Strictest - pin to a full-length commit SHA** (`@a1b2c3d…`) with the version as a trailing comment. A SHA can never be re-pointed by the publisher; the cost is readability. Worth it for actions from publishers you don't control.
+- **Enable [Dependabot](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) for `github-actions`** in the repository that hosts the workflow, so those pins are bumped for you instead of silently ageing.
+
+This applies to **all** actions your workflow references - this action as well as `actions/*` and any other third-party action.
+
+Beyond pinning, a few rules are worth following in the workflow that calls this action:
+
+- **Secrets travel as secrets** - hand the SFDX Auth URL straight into the `sfdx-url` input of [sfdx-login](https://github.com/svierk/sfdx-login) as shown above. Never interpolate a secret into a `run:` script via `${{ ... }}` - that allows command injection and can leak the value into the log. This action follows the same rule internally: every input is exposed to the shell as an **environment variable** and referenced as `"$FILE_PATH"`, `"$TARGET_ORG"` and so on.
+- **Least-privilege `GITHUB_TOKEN`** - declare a `permissions:` block granting only what the job needs. A data import needs no write access at all, so `contents: read` is enough.
+- **`persist-credentials: false` on checkout** - the token is not written to `.git/config`, so later steps (SF CLI, third-party actions) cannot reuse it.
+- **Validate pull requests with `pull_request`, never `pull_request_target`** - the latter runs with the base repository's secrets, which would let a fork import its own data into your org.
 
 ## References
 
