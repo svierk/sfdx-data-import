@@ -10,7 +10,7 @@ inputs:
     description: >
       Path to CSV or JSON files that contain the data to be uploaded.
       CSV (Bulk API 2.0) only supports a single file.
-      JSON (sObject Tree) supports one or multiple files, comma-separated and in-order that contain the records.
+      JSON (sObject Tree) supports one or multiple files that contain the records, in-order and as a comma-separated or multi-line list.
     required: true
   object-type:
     description: >
@@ -49,12 +49,50 @@ runs:
       run: |
         set -euo pipefail
 
-        # Determine the file extension from the first file (CSV is single-file,
-        # JSON may be a comma-separated list that shares the same extension).
-        first_file="${FILE_PATH%%,*}"
-        filename_with_ext=$(basename "$first_file")
-        extension="${filename_with_ext##*.}"
-        extension="${extension,,}"
+        # Splits a comma- or newline-separated input into the global SPLIT array
+        # and trims the surrounding whitespace, so that both notations work:
+        #   file-path: './data/accounts.json,./data/contacts.json'
+        #   file-path: |
+        #     ./data/accounts.json
+        #     ./data/contacts.json
+        split_list() {
+          SPLIT=()
+          local raw item
+          raw="${1//,/$'\n'}"
+          while IFS= read -r item; do
+            item="${item#"${item%%[![:space:]]*}"}"
+            item="${item%"${item##*[![:space:]]}"}"
+            if [[ -n "$item" ]]; then
+              SPLIT+=("$item")
+            fi
+          done <<< "$raw"
+        }
+
+        split_list "$FILE_PATH"
+        files=(${SPLIT[@]+"${SPLIT[@]}"})
+
+        if [[ ${#files[@]} -eq 0 ]]; then
+          echo "::error::The 'file-path' input does not contain any file."
+          exit 1
+        fi
+
+        # The file extension selects the import API, so all files must share it
+        # (CSV is single-file, JSON may be an in-order list of files).
+        extension=""
+        for f in "${files[@]}"; do
+          name="$(basename "$f")"
+          ext="${name##*.}"
+          ext="${ext,,}"
+          if [[ -z "$extension" ]]; then
+            extension="$ext"
+          elif [[ "$ext" != "$extension" ]]; then
+            echo "::error::All files must share the same extension, found '.$extension' and '.$ext'."
+            exit 1
+          fi
+        done
+
+        file_list="$(printf '%s, ' "${files[@]}")"
+        file_list="${file_list%, }"
 
         args=()
 
@@ -72,13 +110,21 @@ runs:
               echo "::error::CSV upload (Bulk API 2.0) requires the 'object-type' input."
               exit 1
             fi
+            if [[ ${#files[@]} -gt 1 ]]; then
+              echo "::error::CSV upload (Bulk API 2.0) supports a single file only, got ${#files[@]}: $file_list"
+              exit 1
+            fi
             args+=(--sobject "$OBJECT_TYPE")
             args+=(--external-id "$EXTERNAL_ID")
-            sf data upsert bulk --file "$FILE_PATH" "${args[@]}"
+            sf data upsert bulk --file "${files[0]}" "${args[@]}"
             format="CSV (Bulk API 2.0)"
             ;;
           json)
-            sf data import tree --files "$FILE_PATH" "${args[@]}"
+            # One --files flag per file keeps the given order.
+            for f in "${files[@]}"; do
+              args+=(--files "$f")
+            done
+            sf data import tree "${args[@]}"
             format="JSON (sObject Tree)"
             ;;
           *)
@@ -87,14 +133,14 @@ runs:
             ;;
         esac
 
-        echo "✅ Successfully imported data from: $FILE_PATH"
+        echo "✅ Successfully imported data from: $file_list"
 
         if [[ "$STEP_SUMMARY" == "true" ]]; then
           {
             echo ""
             echo "### 💾 Data imported"
             echo ""
-            echo "- **File(s):** \`$FILE_PATH\`"
+            echo "- **File(s):** $(printf '`%s`, ' "${files[@]}" | sed 's/, $//')"
             echo "- **Format:** $format"
             if [[ "$extension" == "csv" ]]; then
               echo "- **Object:** \`$OBJECT_TYPE\`"

@@ -20,22 +20,22 @@ jobs:
           persist-credentials: false
 
       - name: Select Node Version
-        uses: svierk/get-node-version@v1.5.1
+        uses: svierk/get-node-version@v1.5.2
 
       - name: Install Dependencies
         run: npm ci
 
       - name: Install SF CLI
-        uses: svierk/sfdx-cli-setup@v1.1.2
+        uses: svierk/sfdx-cli-setup@v1.2.0
 
       - name: Salesforce Org Login
-        uses: svierk/sfdx-login@v1.4.2
+        uses: svierk/sfdx-login@v1.4.3
         with:
           sfdx-url: ${{ secrets.SFDX_AUTH_URL }}
           alias: awesome-org
 
       - name: CSV Data Import
-        uses: svierk/sfdx-data-import@v1.3.1
+        uses: svierk/sfdx-data-import@v1.4.0
         with:
           file-path: './data/accounts.csv'
           object-type: 'Account'
@@ -43,7 +43,7 @@ jobs:
           target-org: awesome-org
 
       - name: JSON Data Import
-        uses: svierk/sfdx-data-import@v1.3.1
+        uses: svierk/sfdx-data-import@v1.4.0
         with:
           file-path: './data/accounts.json,./data/contacts.json'
           api-version: '59.0'
@@ -58,17 +58,33 @@ The following actions were also used in the example workflow to create the prere
 The file format is detected automatically from the file extension:
 
 - `.csv` files are uploaded via Bulk API 2.0 and require the `object-type` input (the `external-id` defaults to `Id`).
-- `.json` files are imported via the sObject Tree API and may be passed as a comma-separated, in-order list of files.
+- `.json` files are imported via the sObject Tree API and may be passed as an in-order list of files (see below).
 
-Any other extension, or a CSV upload without `object-type`, fails the step with a clear error instead of silently doing nothing.
+Any other extension, a mix of extensions, more than one CSV file, or a CSV upload without `object-type` fails the step with a clear error instead of silently doing nothing.
 
 Of course, the data import action can be used flexibly and the respective approach can vary.
+
+### List input (comma-separated or multi-line)
+
+The `file-path` input accepts a comma-separated string as well as a multi-line block, and the two notations can be mixed freely within one step. A comma-separated string keeps short lists on a single line, a block stays readable once a list grows:
+
+```yaml
+      - name: JSON Data Import
+        uses: svierk/sfdx-data-import@v1.4.0
+        with:
+          file-path: | # multi-line block
+            ./data/accounts.json
+            ./data/contacts.json
+            ./data/opportunities.json
+```
+
+The files are imported in the given order, so list parent records before the child records that reference them. Surrounding whitespace and blank lines are ignored, so `'./data/accounts.json, ./data/contacts.json'` is read exactly like the tightly packed `'./data/accounts.json,./data/contacts.json'`. Whitespace inside a path is kept, e.g. for `./my data/accounts.json`.
 
 ## Inputs
 
 | Name          | Required | Default | Description                                                                                          |
 | ------------- | -------- | ------- | -------------------------------------------------------------------------------------------------- |
-| `file-path`   | yes      |         | Path to the CSV or JSON file(s) to upload. CSV supports a single file; JSON supports a comma-separated, in-order list. |
+| `file-path`   | yes      |         | Path to the CSV or JSON file(s) to upload. CSV supports a single file; JSON supports an in-order list, comma-separated or multi-line. |
 | `object-type` | no       |         | API name of the Salesforce object. Required for CSV (Bulk API 2.0) uploads.                          |
 | `external-id` | no       | `Id`    | Name of the external ID field (or `Id`). Used for CSV (Bulk API 2.0) uploads.                        |
 | `target-org`  | no       |         | Username or alias of the target org. Not required if the default org is set.                         |
@@ -77,10 +93,10 @@ Of course, the data import action can be used flexibly and the respective approa
 
 ## Security & versioning
 
-Every `uses:` reference in the snippet above is **pinned to an exact release tag**, e.g. `svierk/sfdx-data-import@v1.3.1`. Do the same in your own pipelines:
+Every `uses:` reference in the snippet above is **pinned to an exact release tag**, e.g. `svierk/sfdx-data-import@v1.4.0`. Do the same in your own pipelines:
 
 - **Never reference a mutable ref** such as `@main` or `@v1`. It runs whatever code sits on that branch/tag at run time - with access to your org credentials - so a compromised or rewritten ref would run unnoticed.
-- **Good - pin to an exact release tag** (`@v1.3.1`). Readable, concrete, and bumped through reviewed pull requests.
+- **Good - pin to an exact release tag** (`@v1.4.0`). Readable, concrete, and bumped through reviewed pull requests.
 - **Strictest - pin to a full-length commit SHA** (`@a1b2c3d…`) with the version as a trailing comment. A SHA can never be re-pointed by the publisher; the cost is readability. Worth it for actions from publishers you don't control.
 - **Enable [Dependabot](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) for `github-actions`** in the repository that hosts the workflow, so those pins are bumped for you instead of silently ageing.
 
